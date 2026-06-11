@@ -64,8 +64,13 @@ Install required build dependencies:
 brew install cmake pkg-config nasm yasm qt xvid x264 x265 libvpx aom opus fdk-aac lame libass mp4v2 a52dec
 ```
 
-Build Avidemux (Apple Silicon):  
+Build Avidemux (Apple Silicon, macOS Tahoe 26+):  
 It may be necessary to install Xcode, not just Command Line Tools, else creation of app bundle fails.
+```
+bash bootStrapMacOS_Tahoe.arm64.sh
+```
+
+Build Avidemux (Apple Silicon, macOS Monterey–Sequoia):
 ```
 bash bootStrapMacOS_Monterey.arm64.sh
 ```
@@ -86,6 +91,28 @@ sh avidemux/osxInstaller/macos-adhoc-sign-installed-app.sh
 ```
 When Avidemux app has been installed to a non-default location, adjust the value
 of `BUNDLE_CONTENT` variable in the aforementioned file accordingly.
+
+### Installing dependencies without polluting system Homebrew
+
+A `Brewfile` is provided for one-shot installation via `brew bundle`:
+```
+brew bundle
+```
+
+To keep dependencies isolated at the project level (does not touch your system
+Homebrew), run the helper script which clones a local Homebrew into
+`.local-deps/brew` and installs all required formulae there:
+```
+bash setupLocalDeps.sh
+```
+Then pass the resulting prefix to the build script:
+```
+bash bootStrapMacOS_Tahoe.arm64.sh --local-deps=.local-deps/brew
+```
+
+> **Note (Apple Silicon):** Homebrew bottles are compiled for `/opt/homebrew`.
+> A local prefix causes most packages to build from source, which can take
+> 30–90 minutes. The resulting binaries are fully functional.
 
 ## Build for Windows
 
