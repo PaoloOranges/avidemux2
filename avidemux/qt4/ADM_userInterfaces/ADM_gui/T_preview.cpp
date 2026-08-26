@@ -110,10 +110,11 @@ ADM_Qvideo::ADM_Qvideo(QFrame *z) : QWidget(z)
     doOnce = false;
     _width = _height = 0;
     hostFrame = z;
-    if (admDetectQtEngine() == QT_WAYLAND_ENGINE)
+    onWayland = admDetectQtEngine() == QT_WAYLAND_ENGINE;
+    if (onWayland)
     {
         setAttribute(Qt::WA_DontCreateNativeAncestors);
-        setAttribute(Qt::WA_NativeWindow);
+        //setAttribute(Qt::WA_NativeWindow); // The result looks broken, don't try this for now.
     }
 } //{setAutoFillBackground(false);}
 #endif // Haiku
@@ -130,7 +131,7 @@ ADM_Qvideo::~ADM_Qvideo()
  */
 void ADM_Qvideo::paintEvent(QPaintEvent *ev)
 {
-    if (admDetectQtEngine() == QT_WAYLAND_ENGINE)
+    if (onWayland)
     {
         if (windowHandle() && window())
         {
@@ -163,7 +164,7 @@ void ADM_Qvideo::paintEvent(QPaintEvent *ev)
 
 bool ADM_Qvideo::eventFilter(QObject *obj, QEvent *event)
 {
-    if (admDetectQtEngine() == QT_WAYLAND_ENGINE)
+    if (onWayland)
     {
         if (event->type() == QEvent::Resize || event->type() == QEvent::Move || event->type() == QEvent::LayoutRequest)
         {
@@ -182,7 +183,7 @@ void ADM_Qvideo::setADMSize(int width, int height)
 {
     _width = width;
     _height = height;
-#if !defined(__APPLE__) && !defined(_WIN32) && defined(USING_QT6)
+#if 0 /* !defined(__APPLE__) && !defined(_WIN32) && defined(USING_QT6) */
     // Work around an issue with Qt 6.2.1 which results in video frame displaying
     // garbage for all subsequently loaded videos after its size was set to zero.
     static uint8_t workaround = 0;
@@ -266,12 +267,18 @@ void UI_updateDrawWindowSize(void *win, uint32_t w, uint32_t h)
     {
         UI_setNeedsResizingFlag(true);
     }
+    QSize restore = QuiMainWindows->size();
     videoWindow->setADMSize(w, h);
     if (!w || !h)
         QuiMainWindows->update(); // clean up the space previously occupied by the video window on closing
     UI_purge();
 
     printf("[RDR] Resizing to %u x %u\n", displayW, displayH);
+    if (QuiMainWindows->size() != restore)
+    {
+        //ADM_info("Restoring main window size from %d x %d to %d x %d\n", QuiMainWindows->width(), QuiMainWindows->height(), restore.width(), restore.height());
+        QuiMainWindows->resize(restore);
+    }
 }
 /**
  *
@@ -309,6 +316,7 @@ static void systemWindowInfo_once()
     case QT_X11_ENGINE: {
         if (!myDisplay)
         {
+#ifdef USE_NATIVE_API
             auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
             if (x11App)
             {
@@ -318,6 +326,10 @@ static void systemWindowInfo_once()
             {
                 myDisplay = XOpenDisplay(NULL);
             }
+#else
+            myDisplay = XOpenDisplay(NULL);
+#endif
+            ADM_assert(myDisplay);
             ADM_info("found x11 display\n");
         }
         mySystemWindowId = videoWindow->winId();
@@ -325,8 +337,8 @@ static void systemWindowInfo_once()
     break;
     case QT_WAYLAND_ENGINE: {
         mySystemWindowId = 0;
-        QPlatformNativeInterface *native = currentQApplication()->platformNativeInterface();
 #ifdef USE_NATIVE_API
+        QPlatformNativeInterface *native = currentQApplication()->platformNativeInterface();
         if (native && videoWindow)
         {
             videoWindow->winId(); // Force handle creation
@@ -383,9 +395,8 @@ static void systemWindowInfo(GUI_WindowInfo *xinfo)
 void UI_getWindowInfo(void *draw, GUI_WindowInfo *xinfo)
 {
     ADM_assert(videoWindow);
-    QWidget *widget = videoWindow->parentWidget();
     xinfo->widget = videoWindow;
-    // xinfo->windowOpaquePointer = myWindowOpaque;
+    xinfo->windowOpaquePointer = myWindowOpaque;
     xinfo->systemWindowId = 0;
     xinfo->scalingFactor = 1.;
     QPoint localPoint(0, 0);

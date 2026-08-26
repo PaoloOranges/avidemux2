@@ -29,10 +29,11 @@ process()
 
     cmake ../aom/ \
         -DCROSS="${CROSS_PREFIX}-" \
-        -DCMAKE_TOOLCHAIN_FILE="../aom/build/cmake/toolchains/${TOOLCHAIN}" \
+        -DCMAKE_TOOLCHAIN_FILE="../aom/cmake/toolchains/${TOOLCHAIN}" \
         -DENABLE_DOCS=0 \
         -DENABLE_EXAMPLES=0 \
         -DENABLE_TOOLS=0 \
+        -DENABLE_TESTS=0 \
         -DBUILD_SHARED_LIBS=0 \
         -DCONFIG_ANALYZER=0 \
         -DFORCE_HIGHBITDEPTH_DECODING=0 \
@@ -98,7 +99,7 @@ fi
 cd "${AOM_HOME}/aom"
 
 if [ "x${AOM_TAG}" = "x" ]; then
-    AOM_TAG="v3.11.0"
+    AOM_TAG="v3.14.1"
 fi
 
 if [ "x${FRESH}" = "x0" ]; then

@@ -236,7 +236,7 @@ rm -Rf avidemux64
 cp -Rap ${MINGW}/out/avidemux ./avidemux64
 find avidemux64 -name "*.a" | xargs rm -f
 rm -Rf avidemux64/include
-mv avidemux64/avidemux.exe avidemux64/avidemux_portable.exe
+#cp avidemux64/avidemux.exe avidemux64/avidemux_portable.exe
 #  Copy extra QT6 files
 mkdir avidemux64/platforms
 cp ${QT_HOME}/plugins/platforms/qminimal.dll ${QT_HOME}/plugins/platforms/qwindows.dll avidemux64/platforms
@@ -248,7 +248,7 @@ mkdir avidemux64/etc
 cp -rvL "${MINGW}"/etc/fonts avidemux64/etc
 
 #
-python3 mxe_scan_deps.py \
+python3 "${SRCTOP}/mxe_scan_deps.py" \
   avidemux64 \
   --sources \
   ${MINGW}/bin \
